@@ -1,0 +1,52 @@
+{
+    "name": "MultiPoint Feature Example",
+    "crs":
+    {
+        "type": "name",
+        "properties":
+        {
+            "name": "urn:ogc:def:crs:OGC:1.3:CRS84"
+        }
+    },
+    "type": "Feature",
+    "id": "20",
+    "properties":
+    {
+        "color": "0000ff"
+    },
+    "geometry":
+    {
+        "type": "MultiPoint",
+        "coordinates":
+        [
+            [
+                7.887328,
+                46.688118
+            ],
+            [
+                7.897567,
+                46.705446
+            ],
+            [
+                7.962153,
+                46.736163
+            ],
+            [
+                8.032252,
+                46.753491
+            ],
+            [
+                8.048792,
+                46.740889
+            ],
+            [
+                7.964516,
+                46.710172
+            ],
+            [
+                7.921196,
+                46.688118
+            ]
+        ]
+    }
+}

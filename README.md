@@ -1,3 +1,3 @@
-# Geobuf to GeoJSON Encoder
+# Geobuf to GeoJSON Decoder
 > Language: Swift
 
