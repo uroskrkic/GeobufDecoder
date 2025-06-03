@@ -91,4 +91,3 @@ This project uses Mapbox’s `geobuf.proto` and is subject to its licensing. All
 
 - Based on the Geobuf format developed by Mapbox.
 - Swift decoding powered by `SwiftProtobuf`.
-
