@@ -93,12 +93,16 @@ public struct GeobufDecoder {
 				let feature = buildFeature(feat: feat, dataMessage: dataMessage)
 				features.append(feature)
 			}
-			return GeoJSON.featureCollection(GeoJSON.FeatureCollection(features: features))
+			var featureCollection = GeoJSON.FeatureCollection(features: features)
+			featureCollection.customProperties = buildProperties(indexes: fc.customProperties, keys: dataMessage.keys, values: fc.values)
+			return GeoJSON.featureCollection(featureCollection)
 		case .feature(let feat):
-			let feature = buildFeature(feat: feat, dataMessage: dataMessage)
+			var feature = buildFeature(feat: feat, dataMessage: dataMessage)
+			feature.customProperties = buildProperties(indexes: feat.customProperties, keys: dataMessage.keys, values: feat.values)
 			return GeoJSON.feature(feature)
 		case .geometry(let geom):
-			let geometry = buildGeometry(geom: geom, dataMessage: dataMessage)
+			var geometry = buildGeometry(geom: geom, dataMessage: dataMessage)
+			geometry.customProperties = buildProperties(indexes: geom.customProperties, keys: dataMessage.keys, values: geom.values)
 			return GeoJSON.geometry(geometry)
 		case .none:
 			return GeoJSON.empty()
@@ -137,7 +141,15 @@ private extension GeobufDecoder {
 				case .boolValue(let val):
 					anyValue = GeoJSON.AnyCodable(val)
 				case .jsonValue(let val):
-					anyValue = GeoJSON.AnyCodable(val)
+					if let jsonData = val.data(using: .utf8) {
+						do {
+							if let dictionary = try JSONSerialization.jsonObject(with: jsonData, options: []) as? [String: Any] {
+								anyValue = GeoJSON.AnyCodable(dictionary)
+							}
+						} catch {
+							print("Failed to parse JSON dict: \(error) --> \(val)")
+						}
+					}
 				}
 				
 				dict[key] = anyValue
@@ -151,25 +163,25 @@ private extension GeobufDecoder {
 		switch geom.type {
 		case .point:
 			let coords = GeobufDecoder.buildLevel1NestingCoords(geometry: geom, dimensions: dataMessage.dimensions, precision: dataMessage.precision)
-			geometry = GeoJSON.Geometry.point(coords)
+			geometry = GeoJSON.Geometry(coords: .point(coords))
 		case .multipoint:
 			let coords = GeobufDecoder.buildLevel2NestingCoords(geometry: geom, dimensions: dataMessage.dimensions, precision: dataMessage.precision)
-			geometry = GeoJSON.Geometry.multiPoint(coords)
+			geometry = GeoJSON.Geometry(coords: .multiPoint(coords))
 		case .linestring:
 			let coords = GeobufDecoder.buildLevel2NestingCoords(geometry: geom, dimensions: dataMessage.dimensions, precision: dataMessage.precision)
-			geometry = GeoJSON.Geometry.lineString(coords)
+			geometry = GeoJSON.Geometry(coords: .lineString(coords))
 		case .multilinestring:
 			let coords = GeobufDecoder.buildLevel3NestingCoords(geometry: geom, dimensions: dataMessage.dimensions, precision: dataMessage.precision, closed: false)
-			geometry = GeoJSON.Geometry.multiLineString(coords)
+			geometry = GeoJSON.Geometry(coords: .multiLineString(coords))
 		case .polygon:
 			let coords = GeobufDecoder.buildLevel3NestingCoords(geometry: geom, dimensions: dataMessage.dimensions, precision: dataMessage.precision, closed: true)
-			geometry = GeoJSON.Geometry.polygon(coords)
+			geometry = GeoJSON.Geometry(coords: .polygon(coords))
 		case .multipolygon:
 			let coords = GeobufDecoder.buildLevel4NestingCoords(geometry: geom, dimensions: dataMessage.dimensions, precision: dataMessage.precision)
-			geometry = GeoJSON.Geometry.multiPolygon(coords)
+			geometry = GeoJSON.Geometry(coords: .multiPolygon(coords))
 		case .geometrycollection:
 			// Currently not supported
-			geometry = GeoJSON.Geometry.point([])
+			geometry = GeoJSON.Geometry(coords: .point([]))
 			break
 		}
 		return geometry

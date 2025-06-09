@@ -62,7 +62,7 @@ public enum GeoJSON: Encodable {
 	
 	/// Null-object pattern
 	public static func empty() -> GeoJSON {
-		GeoJSON.geometry(.point([]))
+		GeoJSON.geometry(Geometry(coords: .point([])))
 	}
 }
 
@@ -107,9 +107,41 @@ public extension GeoJSON {
 	struct FeatureCollection: Codable {
 		let type: String = "FeatureCollection"
 		var features: [Feature]
+		var customProperties: [String: AnyCodable]?		// root level properties
 		
 		enum CodingKeys: String, CodingKey {
 			case type, features
+		}
+		
+		struct DynamicCodingKeys: CodingKey {
+			var stringValue: String
+			init(stringValue: String) {
+				self.stringValue = stringValue
+			}
+
+			var intValue: Int? = nil
+			init?(intValue: Int) {
+				return nil	// only string keys supported
+			}
+		}
+		
+		public func encode(to encoder: Encoder) throws {
+			var container = encoder.container(keyedBy: CodingKeys.self)
+			try container.encode(type, forKey: .type)
+			try container.encode(features, forKey: .features)
+
+			// Inject customProperties at root
+			if let customProperties = customProperties {
+				var dynamicContainer = encoder.container(keyedBy: DynamicCodingKeys.self)
+				for (key, value) in customProperties {
+					guard CodingKeys(stringValue: key) == nil else {
+						// Prevent overwriting existing keys like "type" or "features"
+						continue
+					}
+					let dynamicKey = DynamicCodingKeys(stringValue: key)
+					try dynamicContainer.encode(value, forKey: dynamicKey)
+				}
+			}
 		}
 	}
 
@@ -118,22 +150,73 @@ public extension GeoJSON {
 		let type: String = "Feature"
 		var geometry: Geometry?
 		var properties: [String: AnyCodable]?
+		var customProperties: [String: AnyCodable]?		// root level properties
 
 		enum CodingKeys: String, CodingKey {
 			case id, type, geometry, properties
 		}
+		
+		struct DynamicCodingKeys: CodingKey {
+			var stringValue: String
+			init(stringValue: String) {
+				self.stringValue = stringValue
+			}
+
+			var intValue: Int? = nil
+			init?(intValue: Int) {
+				return nil	// only string keys supported
+			}
+		}
+		
+		public func encode(to encoder: Encoder) throws {
+			var container = encoder.container(keyedBy: CodingKeys.self)
+			try container.encode(id, forKey: .id)
+			try container.encode(type, forKey: .type)
+			try container.encode(geometry, forKey: .geometry)
+			try container.encode(properties, forKey: .properties)
+
+			// Inject customProperties at root
+			if let customProperties = customProperties {
+				var dynamicContainer = encoder.container(keyedBy: DynamicCodingKeys.self)
+				for (key, value) in customProperties {
+					guard CodingKeys(stringValue: key) == nil else {
+						// Prevent overwriting existing keys like "type" or "features"
+						continue
+					}
+					let dynamicKey = DynamicCodingKeys(stringValue: key)
+					try dynamicContainer.encode(value, forKey: dynamicKey)
+				}
+			}
+		}
 	}
 	
-	enum Geometry: Codable {
-		case point([Double])
-		case lineString([[Double]])
-		case polygon([[[Double]]])
-		case multiPoint([[Double]])
-		case multiLineString([[[Double]]])
-		case multiPolygon([[[[Double]]]])
+	struct Geometry: Codable {
+		enum Coords {
+			case point([Double])
+			case lineString([[Double]])
+			case polygon([[[Double]]])
+			case multiPoint([[Double]])
+			case multiLineString([[[Double]]])
+			case multiPolygon([[[[Double]]]])
+		}
+		
+		let coords: Coords
+		var customProperties: [String: AnyCodable]?		// root level properties
 
 		enum CodingKeys: String, CodingKey {
 			case type, coordinates
+		}
+		
+		struct DynamicCodingKeys: CodingKey {
+			var stringValue: String
+			init(stringValue: String) {
+				self.stringValue = stringValue
+			}
+
+			var intValue: Int? = nil
+			init?(intValue: Int) {
+				return nil	// only string keys supported
+			}
 		}
 
 		enum GeometryType: String, Codable {
@@ -144,6 +227,11 @@ public extension GeoJSON {
 			case multiLineString = "MultiLineString"
 			case multiPolygon = "MultiPolygon"
 		}
+		
+		init(coords: Coords) {
+			self.coords = coords
+			self.customProperties = nil
+		}
 
 		public init(from decoder: Decoder) throws {
 			let container = try decoder.container(keyedBy: CodingKeys.self)
@@ -151,24 +239,24 @@ public extension GeoJSON {
 			
 			switch type {
 			case .point:
-				self = .point(try container.decode([Double].self, forKey: .coordinates))
+				coords = .point(try container.decode([Double].self, forKey: .coordinates))
 			case .lineString:
-				self = .lineString(try container.decode([[Double]].self, forKey: .coordinates))
+				coords = .lineString(try container.decode([[Double]].self, forKey: .coordinates))
 			case .polygon:
-				self = .polygon(try container.decode([[[Double]]].self, forKey: .coordinates))
+				coords = .polygon(try container.decode([[[Double]]].self, forKey: .coordinates))
 			case .multiPoint:
-				self = .multiPoint(try container.decode([[Double]].self, forKey: .coordinates))
+				coords = .multiPoint(try container.decode([[Double]].self, forKey: .coordinates))
 			case .multiLineString:
-				self = .multiLineString(try container.decode([[[Double]]].self, forKey: .coordinates))
+				coords = .multiLineString(try container.decode([[[Double]]].self, forKey: .coordinates))
 			case .multiPolygon:
-				self = .multiPolygon(try container.decode([[[[Double]]]].self, forKey: .coordinates))
+				coords = .multiPolygon(try container.decode([[[[Double]]]].self, forKey: .coordinates))
 			}
 		}
 
 		public func encode(to encoder: Encoder) throws {
 			var container = encoder.container(keyedBy: CodingKeys.self)
 
-			switch self {
+			switch self.coords {
 			case .point(let coords):
 				try container.encode(GeometryType.point, forKey: .type)
 				try container.encode(coords, forKey: .coordinates)
@@ -187,6 +275,19 @@ public extension GeoJSON {
 			case .multiPolygon(let coords):
 				try container.encode(GeometryType.multiPolygon, forKey: .type)
 				try container.encode(coords, forKey: .coordinates)
+			}
+			
+			// Inject customProperties at root
+			if let customProperties = customProperties {
+				var dynamicContainer = encoder.container(keyedBy: DynamicCodingKeys.self)
+				for (key, value) in customProperties {
+					guard CodingKeys(stringValue: key) == nil else {
+						// Prevent overwriting existing keys like "type" or "features"
+						continue
+					}
+					let dynamicKey = DynamicCodingKeys(stringValue: key)
+					try dynamicContainer.encode(value, forKey: dynamicKey)
+				}
 			}
 		}
 	}
