@@ -1,6 +1,6 @@
 # GeobufDecoder
 
-> **Version 1.0.0**
+> **Version 1.1.0**
 
 > Language: Swift
 
@@ -79,7 +79,7 @@ let geojson = decoder.decode(data: data)
 
 Add the package to your `Package.swift`:
 
-`.package(url: "https://github.com/uroskrkic/GeobufDecoder.git", from: "1.0.0")`
+`.package(url: "https://github.com/uroskrkic/GeobufDecoder.git", from: "1.1.0")`
 
 Then add `GeobufDecoder` as a dependency to your target.
 
