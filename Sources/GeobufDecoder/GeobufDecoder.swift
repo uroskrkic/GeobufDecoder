@@ -25,13 +25,27 @@ import Foundation
 ///
 public struct GeobufDecoder {
 	
+	private var parseStringAsType = false
+	private var trimStringPropertiesValues = false
 	private var verbose = false
 	
-	/// Decoder initializier
+	private static let trimCharacterSet = CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "\""))
+	
+	/// Initializes the decoder with custom configuration.
 	///
 	/// - Parameters:
-	///   - verbose: Default `false`. Prints metadata during the execution.
-	public init(verbose: Bool = false) {
+	///   - parseStringAsType: If `true`, attempts to parse string values into native types (`Int`, `Double`, `Bool`) when possible, otherwise `String`.
+	///                        For example, a string `"42"` will be decoded as an `Int`, `"3.14"` as a `Double`, and `"true"` as a `Bool`.
+	///                        If `false` (default), all string values are kept as-is.
+	///   - trimStringPropertiesValues: If `true`, trims leading and trailing whitespace and quotation marks (`"`) from all string properties values during decoding.
+	///                                 Useful for cleaning up input from loosely structured data sources.
+	///                                 For example, `"\"value\""` will be decoded as `"value"`.
+	///                                 If `false` (default), no trimming applied.
+	///   - verbose: If `true`, enables verbose logging or debug output during decoding, helpful for development or troubleshooting.
+	///
+	public init(parseStringAsType: Bool = false, trimStringPropertiesValues: Bool = false, verbose: Bool = false) {
+		self.parseStringAsType = parseStringAsType
+		self.trimStringPropertiesValues = trimStringPropertiesValues
 		self.verbose = verbose
 	}
 	
@@ -46,7 +60,7 @@ public struct GeobufDecoder {
 	///     fields are present. If any are missing, this method fails.
 	public func decode(geobufFile: URL, partial: Bool = false) -> GeoJSON? {
 		guard let data = try? Data(contentsOf: geobufFile) else { return nil }
-		return decode(data: data, partial: partial)
+		return decode(data: data)
 	}
 	
 	/// Create a GeoJSON from a Data.
@@ -113,6 +127,35 @@ public struct GeobufDecoder {
 // MARK: - Build helpers
 
 private extension GeobufDecoder {
+	static func parseString(_ input: String, trim: Bool = false) -> GeoJSON.AnyCodable {
+		if let boolValue = Bool(input) {
+			return GeoJSON.AnyCodable(boolValue)
+		} else if let intValue = Int(input) {
+			return GeoJSON.AnyCodable(intValue)
+		} else if let doubleValue = Double(input) {
+			return GeoJSON.AnyCodable(doubleValue)
+		} else {
+			if trim {
+				return GeoJSON.AnyCodable(trimQuotes(input))
+			}
+			return GeoJSON.AnyCodable(input)
+		}
+	}
+	
+	static func trimQuotes(_ input: String) -> String {
+		return input.trimmingCharacters(in: trimCharacterSet)
+	}
+	
+	func buildStringProperty(_ value: String) -> GeoJSON.AnyCodable {
+		if parseStringAsType {
+			return GeobufDecoder.parseString(value, trim: trimStringPropertiesValues)
+		}
+		if trimStringPropertiesValues {
+			return GeoJSON.AnyCodable(GeobufDecoder.trimQuotes(value))
+		}
+		return GeoJSON.AnyCodable(value)
+	}
+	
 	func buildProperties(indexes: [UInt32], keys: [String], values: [DataMessage.Value]) -> [String: GeoJSON.AnyCodable] {
 		var dict: [String: GeoJSON.AnyCodable] = [:]
 
@@ -131,7 +174,7 @@ private extension GeobufDecoder {
 			if let valueType = value.valueType {
 				switch valueType {
 				case .stringValue(let val):
-					anyValue = GeoJSON.AnyCodable(val)
+					anyValue = buildStringProperty(val)
 				case .doubleValue(let val):
 					anyValue = GeoJSON.AnyCodable(val)
 				case .posIntValue(let val):
@@ -147,7 +190,8 @@ private extension GeobufDecoder {
 								anyValue = GeoJSON.AnyCodable(dictionary)
 							}
 						} catch {
-							print("Failed to parse JSON dict: \(error) --> \(val)")
+							print("Failed to parse JSON dict: \(error) --> \(val) ==> Fallback as String representation.")
+							anyValue = buildStringProperty(val)
 						}
 					}
 				}

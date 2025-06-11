@@ -7,4 +7,4 @@
 
 import GeobufDecoder
 
-let decoder = GeobufDecoder(verbose: true)
+let decoder = GeobufDecoder(parseStringAsType: true, trimStringPropertiesValues: true, verbose: true)
