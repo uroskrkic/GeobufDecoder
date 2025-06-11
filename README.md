@@ -1,6 +1,6 @@
 # GeobufDecoder
 
-> **Version 1.1.1**
+> **Version 1.1.2**
 
 > Language: Swift
 
@@ -77,6 +77,8 @@ let geojson = decoder.decode(data: data)
 
 ## ⚙️ Configuration
 
+### Initialization
+
 You can customize the behavior of the decoder using the `init(parseStringAsType:trimStringPropertiesValues:verbose:)` initializer.
 
 The available parameters control how input values are interpreted and cleaned up during decoding.
@@ -89,9 +91,9 @@ public init(
 )
 ```
 
-### Parameters:
+#### Parameters:
 
-#### `parseStringAsType (default: false)`
+##### `parseStringAsType (default: false)`
 
 When enabled, the decoder attempts to automatically parse string values into native types.
 
@@ -103,7 +105,7 @@ For example:
 
 This is useful when input data uses strings to represent numbers or booleans.
 
-#### `trimStringPropertiesValues (default: false)`
+##### `trimStringPropertiesValues (default: false)`
 
 If enabled, leading and trailing whitespace and quotation marks (") are removed from all decoded string properties.
 
@@ -111,16 +113,32 @@ Useful for cleaning up inconsistent or loosely formatted input data.
 
 For example, `"\"value\""` will be decoded as `"value"`.
 
-#### `verbose (default: false)`
+##### `verbose (default: false)`
 
 Enables detailed logging during decoding. Helps with debugging and understanding how the input is processed.
 
+### Decoding
+
+You can decode an input into a GeoJSON object using the following methods:
+
+- `public func decode(geobufFile: URL, partial: Bool = false) -> GeoJSON?`
+- `public func decode(data: Data, partial: Bool = false) -> GeoJSON?`
+- `public func decode(dataMessage: DataMessage) -> GeoJSON`
+
+⚠️ `partial (default: false)` flag controls whether decoding should enforce validation of required fields.
+
+- If set to `false` (default), the method checks that all required fields in the Protobuf message are fully initialized by calling `isInitialized`. If any required field is missing, decoding fails and returns nil.
+- If set to `true`, the method skips the `isInitialized` check, allowing decoding to proceed even if some required fields are missing.
+
+Use `partial` flag with caution — it can result in incomplete or malformed GeoJSON output if the input file is invalid.
+
+For more info, check `SwiftProtobuf/Message+BinaryAdditions/init(serializedBytes:extensions:partial:options)` and `SwiftProtobuf/Message/isInitialized`.
 
 ## 🧩 Installation
 
 Add the package to your `Package.swift`:
 
-`.package(url: "https://github.com/uroskrkic/GeobufDecoder.git", from: "1.1.1")`
+`.package(url: "https://github.com/uroskrkic/GeobufDecoder.git", from: "1.1.2")`
 
 Then add `GeobufDecoder` as a dependency to your target.
 
