@@ -75,6 +75,47 @@ let geojson = decoder.decode(data: data)
  
 ```
 
+## ⚙️ Configuration
+
+You can customize the behavior of the decoder using the `init(parseStringAsType:trimStringPropertiesValues:verbose:)` initializer.
+
+The available parameters control how input values are interpreted and cleaned up during decoding.
+
+```swift
+public init(
+    parseStringAsType: Bool = false,
+    trimStringPropertiesValues: Bool = false,
+    verbose: Bool = false
+)
+```
+
+### Parameters:
+
+#### `parseStringAsType (default: false)`
+
+When enabled, the decoder attempts to automatically parse string values into native types.
+
+For example:
+
+- "42" → `Int`
+- "3.14" → `Double`
+- "true" / "false" → `Bool`
+
+This is useful when input data uses strings to represent numbers or booleans.
+
+#### `trimStringPropertiesValues (default: false)`
+
+If enabled, leading and trailing whitespace and quotation marks (") are removed from all decoded string properties.
+
+Useful for cleaning up inconsistent or loosely formatted input data.
+
+For example, `"\"value\""` will be decoded as `"value"`.
+
+#### `verbose (default: false)`
+
+Enables detailed logging during decoding. Helps with debugging and understanding how the input is processed.
+
+
 ## 🧩 Installation
 
 Add the package to your `Package.swift`:
