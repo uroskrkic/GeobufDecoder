@@ -190,7 +190,9 @@ private extension GeobufDecoder {
 								anyValue = GeoJSON.AnyCodable(dictionary)
 							}
 						} catch {
-							print("Failed to parse JSON dict: \(error) --> \(val) ==> Fallback as String representation.")
+							if verbose {
+								print("Failed to parse JSON dict: \(error) --> \(val) ==> Fallback as String representation.")
+							}
 							anyValue = buildStringProperty(val)
 						}
 					}
