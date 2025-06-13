@@ -326,7 +326,7 @@ private extension GeobufDecoder {
 						index += dimension
 						ring.append(currentGroup)
 					}
-					if closed {
+					if closed && !ring.isEmpty {
 						ring.append(ring[0])
 					}
 					outerRing.append(ring)
@@ -393,7 +393,7 @@ private extension GeobufDecoder {
 						index += dimension
 						combo.append(currentGroup)
 					}
-					if closed {
+					if closed && !combo.isEmpty {
 						combo.append(combo[0])
 					}
 					result.append(combo)
