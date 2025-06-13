@@ -1,6 +1,6 @@
 # GeobufDecoder
 
-> **Version 1.1.2**
+> **Version 1.1.3**
 
 > Language: Swift
 
@@ -138,7 +138,7 @@ For more info, check `SwiftProtobuf/Message+BinaryAdditions/init(serializedBytes
 
 Add the package to your `Package.swift`:
 
-`.package(url: "https://github.com/uroskrkic/GeobufDecoder.git", from: "1.1.2")`
+`.package(url: "https://github.com/uroskrkic/GeobufDecoder.git", from: "1.1.3")`
 
 Then add `GeobufDecoder` as a dependency to your target.
 
